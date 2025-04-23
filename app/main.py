@@ -15,6 +15,8 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 API_LIMIT = os.environ.get("API_LIMIT")
 
+print(SUPABASE_URL, SUPABASE_KEY, API_LIMIT)
+
 app = FastAPI()
 repository = Repository(SUPABASE_URL, SUPABASE_KEY)
 llm = LLM()
