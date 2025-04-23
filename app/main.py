@@ -38,7 +38,7 @@ async def root(request: KakaoRequest):
                 "message": "Daily usage limit (3) exceeded. Please try again tomorrow.",
                 "status": 429,
             }
-        
+
         technical_analysis = llm.get_technical_analysis(utterance, analyzer.get_data)
         new_chat = ChatHistory(
             user_id=user_id,
@@ -48,7 +48,7 @@ async def root(request: KakaoRequest):
         )
         repository.save_chat_log(new_chat)
 
-        return technical_analysis
+        return {"ai_analysis": technical_analysis}
 
     except Exception as e:
         print(e)
