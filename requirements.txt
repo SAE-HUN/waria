@@ -1,2 +1,6 @@
 fastapi==0.100.0
 hypercorn==0.14.4
+python-dotenv==1.1.0
+yfinance==0.2.55
+langchain==0.3.24
+langchain-core==0.3.55
