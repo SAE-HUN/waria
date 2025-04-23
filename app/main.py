@@ -2,7 +2,7 @@ import os
 import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.finance.analyzer import Analyzer
 from app.llm.chat_bot import LLM
@@ -22,10 +22,11 @@ analyzer = Analyzer()
 
 
 @app.post("/")
-async def root(request: KakaoRequest):
+async def root(request: Request):
     try:
-        user_id = request.userRequest.user.id
-        utterance = request.userRequest.utterance
+        request = await request.json()
+        user_id = request["userRequest"]["user"]["id"]
+        utterance = request["userRequest"]["utterance"]
 
         chat_history = repository.get_chat_history(user_id)
         today_logs = [
@@ -44,7 +45,7 @@ async def root(request: KakaoRequest):
             user_id=user_id,
             utterance=utterance,
             response=technical_analysis,
-            is_user_friend=request.userRequest.user.properties.isFriend,
+            is_user_friend=request["userRequest"]["user"]["properties"]["isFriend"],
         )
         repository.save_chat_log(new_chat)
 
