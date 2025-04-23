@@ -4,4 +4,5 @@ python-dotenv==1.1.0
 yfinance==0.2.55
 langchain==0.3.24
 langchain-core==0.3.55
+langchain-openai==0.3.14
 supabase==2.15.0
