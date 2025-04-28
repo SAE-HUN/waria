@@ -85,7 +85,8 @@ async def request_analysis(request: Request):
 async def get_analysis_result(request: Request):
     try:
         request = await request.json()
-        chat_id = request["userRequest"]["block"]["extra"]["chat_id"]
+        print(request)
+        # chat_id = request["userRequest"]["block"]["extra"]["chat_id"]
         # chat_history = repository.get_chat_history(chat_id)
 
         # return {"ai_analysis": technical_analysis}
