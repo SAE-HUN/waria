@@ -64,7 +64,7 @@ async def request_analysis(request: Request):
                             {
                                 "label": "get analysis",
                                 "action": "block",
-                                "blockId": "get_analysis_result",
+                                "blockId": "680b22cabfa6987bff180209",
                                 "extra": {
                                     "chat_id": chat_id,
                                 }
