@@ -30,6 +30,16 @@ class Repository:
 
         return [ChatHistory(**item) for item in result.data]
 
+    def get_chat(self, chat_id: str) -> ChatHistory:
+        result = (
+            self.supabase.table("chat_history")
+            .select("*")
+            .eq("id", chat_id)
+            .execute()
+        )
+
+        return ChatHistory(**result.data[0])
+
     def save_chat_history(self, history: ChatHistory):
         data = history.model_dump(exclude={'response', 'created_at'})
         response = self.supabase.table("chat_history").insert(data).execute()

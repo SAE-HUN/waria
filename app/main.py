@@ -62,7 +62,7 @@ async def request_analysis(request: Request):
                                     "blockId": "680b22cabfa6987bff180209",
                                     "extra": {
                                         "chat_id": chat_id,
-                                    }
+                                    },
                                 }
                             ],
                         }
@@ -80,12 +80,11 @@ async def request_analysis(request: Request):
 async def get_analysis_result(request: Request):
     try:
         request = await request.json()
-        print(request)
-        # chat_id = request["userRequest"]["block"]["extra"]["chat_id"]
-        # chat_history = repository.get_chat_history(chat_id)
-
-        # return {"ai_analysis": technical_analysis}
-
+        chat_id = request["action"]["clientExtra"]["chat_id"]
+        print(chat_id)
+        chat = repository.get_chat(chat_id)
+        print(chat)
+        return { "analysis": chat.response }
     except Exception as e:
         print(e)
         return e
