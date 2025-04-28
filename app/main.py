@@ -81,10 +81,12 @@ async def get_analysis_result(request: Request):
     try:
         request = await request.json()
         chat_id = request["action"]["clientExtra"]["chat_id"]
-        print(chat_id)
         chat = repository.get_chat(chat_id)
-        print(chat)
-        return { "analysis": chat.response }
+
+        if chat.response:
+            return { "analysis": chat.response }
+        else:
+            return { "analysis": "No analysis result" }
     except Exception as e:
         print(e)
         return e
