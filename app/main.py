@@ -39,7 +39,7 @@ async def request_analysis(request: Request):
                 "message": "Daily usage limit (3) exceeded. Please try again tomorrow.",
                 "status": 429,
             }
-        
+
         new_chat = ChatHistory(
             user_id=user_id,
             utterance=utterance,
@@ -53,32 +53,28 @@ async def request_analysis(request: Request):
             "template": {
                 "outputs": [
                     {
-                        "basicCard": {
+                        "textCard": {
                             "title": utterance,
                             "description": "click below button to get analysis after 10 seconds",
-                            "thumbnail": {
-                                "imageUrl": "https://img1.daumcdn.net/thumb/C200x200.mplusfriend/?fname=http%3A%2F%2Fk.kakaocdn.net%2Fdn%2FkAv0g%2FbtsNzAmELUK%2FkOKb2ueSDtZTjzbgoDKXw0%2Fimg_xl.jpg"
-                            }
-                        },
-                        "buttons": [
-                            {
-                                "label": "get analysis",
-                                "action": "block",
-                                "blockId": "680b22cabfa6987bff180209",
-                                "extra": {
-                                    "chat_id": chat_id,
+                            "buttons": [
+                                {
+                                    "action": "block",
+                                    "label": "get analysis",
+                                    "blockId": "680b22cabfa6987bff180209",
+                                    "extra": {
+                                        "chat_id": chat_id,
+                                    }
                                 }
-                            }
-                        ]
+                            ],
+                        }
                     }
                 ]
-            }
+            },
         }
 
     except Exception as e:
         print(e)
         return e
-
 
 
 @app.post("/analyze/result")
