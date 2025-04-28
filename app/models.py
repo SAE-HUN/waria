@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class ChatHistory(BaseModel):
     user_id: str
     utterance: str
-    response: str
+    response: str | None = None
     is_user_friend: bool
     created_at: datetime | None = None
 

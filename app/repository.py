@@ -30,19 +30,9 @@ class Repository:
 
         return [ChatHistory(**item) for item in result.data]
 
-    def save_chat_log(self, log: ChatHistory):
-        start_time = time.time()
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"\nSaving chat log start: {current_time}")
-
-        # Convert to dict and remove created_at to use Supabase default
-        data = log.model_dump(exclude={'created_at'})
+    def save_chat_history(self, history: ChatHistory):
+        data = history.model_dump(exclude={'response', 'created_at'})
         response = self.supabase.table("chat_history").insert(data).execute()
-
-        end_time = time.time()
-        elapsed = end_time - start_time
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"Saving chat log end: {current_time} (took {elapsed:.3f}s)")
 
         return response
 

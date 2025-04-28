@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request
 
 from app.finance.analyzer import Analyzer
 from app.llm.chat_bot import LLM
-from app.models import ChatHistory, KakaoRequest
+from app.models import ChatHistory
 from app.repository import Repository
 
 load_dotenv()
@@ -21,35 +21,74 @@ llm = LLM()
 analyzer = Analyzer()
 
 
-@app.post("/")
-async def root(request: Request):
+@app.post("/analyze/request")
+async def request_analysis(request: Request):
     try:
         request = await request.json()
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]
 
         chat_history = repository.get_chat_history(user_id)
-        today_logs = [
-            log
-            for log in chat_history
-            if (time.time() - log.created_at.timestamp()) < 24 * 60 * 60
+        today_chats = [
+            chat
+            for chat in chat_history
+            if (time.time() - chat.created_at.timestamp()) < 24 * 60 * 60
         ]
-        if len(today_logs) >= int(API_LIMIT):
+        if len(today_chats) >= int(API_LIMIT):
             return {
                 "message": "Daily usage limit (3) exceeded. Please try again tomorrow.",
                 "status": 429,
             }
-
-        technical_analysis = llm.get_technical_analysis(utterance, analyzer.get_data)
+        
         new_chat = ChatHistory(
             user_id=user_id,
             utterance=utterance,
-            response=technical_analysis,
             is_user_friend=request["userRequest"]["user"]["properties"]["isFriend"],
         )
-        repository.save_chat_log(new_chat)
+        result = repository.save_chat_history(new_chat)
+        chat_id = result.data[0]["id"]
 
-        return {"ai_analysis": technical_analysis}
+        return {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "basicCard": {
+                            "title": utterance,
+                            "description": "click below button to get analysis after 10 seconds",
+                            "thumbnail": {
+                                "imageUrl": "https://img1.daumcdn.net/thumb/C200x200.mplusfriend/?fname=http%3A%2F%2Fk.kakaocdn.net%2Fdn%2FkAv0g%2FbtsNzAmELUK%2FkOKb2ueSDtZTjzbgoDKXw0%2Fimg_xl.jpg"
+                            }
+                        },
+                        "buttons": [
+                            {
+                                "label": "get analysis",
+                                "action": "block",
+                                "blockId": "get_analysis_result",
+                                "extra": {
+                                    "chat_id": chat_id,
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+    except Exception as e:
+        print(e)
+        return e
+
+
+
+@app.post("/analyze/result")
+async def get_analysis_result(request: Request):
+    try:
+        request = await request.json()
+        chat_id = request["userRequest"]["block"]["extra"]["chat_id"]
+        # chat_history = repository.get_chat_history(chat_id)
+
+        # return {"ai_analysis": technical_analysis}
 
     except Exception as e:
         print(e)
