@@ -43,7 +43,6 @@ async def request_analysis(request: Request):
         new_chat = ChatHistory(
             user_id=user_id,
             utterance=utterance,
-            is_user_friend=request["userRequest"]["user"]["properties"]["isFriend"],
         )
         result = repository.save_chat_history(new_chat)
         chat_id = result.data[0]["id"]
