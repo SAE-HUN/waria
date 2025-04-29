@@ -70,7 +70,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
         ]
         if len(today_chats) >= int(API_LIMIT):
             return {
-                "message": "Daily usage limit (3) exceeded. Please try again tomorrow.",
+                "message": f"Daily usage limit ({API_LIMIT}) exceeded. Please try again tomorrow.",
                 "status": 429,
             }
 
