@@ -1,104 +1,156 @@
-from langchain.chat_models import init_chat_model
-from langchain.tools import Tool
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    FewShotChatMessagePromptTemplate,
-)
 from typing import List
-from app.models import ChatHistory
-import time
-from datetime import datetime
+from app.repository.models import Chat
+import json
+import requests
 
 from app.llm.templates import (
     examples,
-    technical_analysis_template,
+    system_message,
 )
 
 
 class LLM:
-    def __init__(self) -> None:
-        self.model = init_chat_model(
-            "claude-3-7-sonnet-latest", model_provider="anthropic", temperature=0.7
-        )
+    def __init__(
+        self,
+        OPEN_ROUTER_URL: str,
+        OPENROUTER_API_KEY: str,
+        model: str,
+        temperature: float = 0.7,
+    ) -> None:
+        self.open_router_headers = {
+            'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+            'Content-Type': 'application/json',
+        }
+        self.open_router_url = OPEN_ROUTER_URL
+        self.model = model
+        self.temperature = temperature
 
-    def change_model(self, model_name: str) -> None:
-        self.model = init_chat_model(model_name, model_provider="openai", temperature=0)
-
-    def get_technical_analysis(
-        self, utterance: str, stock_data_func, chat_history: List[ChatHistory]
+    def get_analysis(
+        self,
+        utterance: str,
+        technical_data_func,
+        fundamental_data_func,
+        chat_history: List[Chat],
     ):
         tools = [
-            Tool(
-                name="get_stock_data",
-                description="Get stock data for a given ticker symbol (e.g. '011070.KS'). Returns OHLCV data for technical analysis.",
-                func=stock_data_func,
-            )
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_technical_data",
+                    "description": "Get technical data for a given symbol (e.g. '011070.KS'). Returns OHLCV data and indicators for technical analysis.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "symbol": {
+                                "type": "string",
+                                "description": "The symbol to get data for",
+                            }
+                        },
+                        "required": ["symbol"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_fundamental_data",
+                    "description": "Get fundamental data for a given symbol (e.g. '011070.KS'). Returns fundamental metrics for fundamental analysis.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "symbol": {
+                                "type": "string",
+                                "description": "The symbol to get data for",
+                            },
+                        },
+                        "required": ["symbol"],
+                    },
+                },
+            },
         ]
+        tool_functions = {
+            "get_technical_data": technical_data_func,
+            "get_fundamental_data": fundamental_data_func,
+        }
 
-        system_message = SystemMessage(content=technical_analysis_template)
-        example_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("human", "{input}"),
-                ("ai", "{output}"),
-            ]
-        )
-        few_shot_prompt = FewShotChatMessagePromptTemplate(
-            example_prompt=example_prompt,
-            examples=examples,
-        )
-        few_shot_messages = few_shot_prompt.format()
-        messages = [system_message]
-        messages.extend(few_shot_messages)
+        messages = [{"role": "system", "content": system_message}]
 
+        # Add few-shot examples
+        for example in examples:
+            messages.append({"role": "user", "content": example["input"]})
+            messages.append({"role": "assistant", "content": example["output"]})
+
+        # Add chat history
         for chat in chat_history:
             if not chat.utterance or not chat.response:
                 continue
-            messages.append(HumanMessage(content=chat.utterance))
-            messages.append(AIMessage(content=chat.response))
-        messages.append(HumanMessage(content=utterance))
+            messages.append({"role": "user", "content": chat.utterance})
+            messages.append({"role": "assistant", "content": chat.response})
 
-        llm_with_tools = self.model.bind_tools(tools)
+        # Add current user message
+        messages.append({"role": "user", "content": utterance})
 
-        start_time = time.time()
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"\nllm_with_tools.invoke start: {current_time}")
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "temperature": self.temperature,
+        }
 
-        ai_message = llm_with_tools.invoke(messages)
+        # First API call to get tool calls
+        response = requests.post(
+            self.open_router_url, headers=self.open_router_headers, json=payload
+        )
 
-        end_time = time.time()
-        elapsed = end_time - start_time
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"llm_with_tools.invoke end: {current_time} (took {elapsed:.3f}s)")
-        print(ai_message)
+        response_data = response.json()
+        assistant_message = response_data["choices"][0]["message"]
+        print(response_data)
 
-        if not ai_message.tool_calls:
-            return ai_message.content
-        
-        messages.append(ai_message)
-        for tool_call in ai_message.tool_calls:
-            selected_tool = {"get_stock_data": tools[0]}[tool_call["name"].lower()]
+        # If no tool calls, return the content directly
+        if "tool_calls" not in assistant_message or not assistant_message["tool_calls"]:
+            return assistant_message["content"]
 
-            start_time = time.time()
-            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-            print(f"\nselected_tool.invoke start: {current_time}")
-            tool_message = selected_tool.invoke(tool_call)
-            end_time = time.time()
-            elapsed = end_time - start_time
-            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-            print(f"selected_tool.invoke end: {current_time} (took {elapsed:.3f}s)")
-            messages.append(tool_message)
+        # Add assistant message with tool calls to messages
+        messages.append(assistant_message)
 
-        start_time = time.time()
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"\nllm_with_data.invoke start: {current_time}")
+        # Process tool calls
+        for tool_call in assistant_message["tool_calls"]:
+            print(tool_call)
+            function_name = tool_call["function"]["name"].lower()
 
-        result = llm_with_tools.invoke(messages)
-        print(result)
+            if not function_name in tool_functions:
+                continue
 
-        end_time = time.time()
-        elapsed = end_time - start_time
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"llm_with_data.invoke end: {current_time} (took {elapsed:.3f}s)")
+            args = json.loads(tool_call["function"]["arguments"])
+            tool_result = tool_functions[function_name](**args)
+            if hasattr(tool_result, "__dataclass_fields__"):
+                tool_result = {
+                    field: getattr(tool_result, field)
+                    for field in tool_result.__dataclass_fields__
+                }
 
-        return result.content
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "name": tool_call["function"]["name"],
+                    "content": json.dumps(tool_result),
+                }
+            )
+
+        # Second API call with tool results
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": self.temperature,
+        }
+        response = requests.post(
+            self.open_router_url, headers=self.open_router_headers, json=payload
+        )
+
+        response_data = response.json()
+        final_result = response_data["choices"][0]["message"]["content"]
+        print(response_data)
+
+        return final_result

@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
-class ChatHistory(BaseModel):
+class Chat(BaseModel):
     user_id: str
     utterance: str
     response: str | None = None
