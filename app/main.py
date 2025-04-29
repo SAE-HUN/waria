@@ -2,7 +2,7 @@ import os
 import time
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 
 from app.finance.analyzer import Analyzer
 from app.llm.chat_bot import LLM
@@ -21,8 +21,11 @@ llm = LLM()
 analyzer = Analyzer()
 
 
+async def analyze_stock(chat_id: str, chat_history):
+    repository.update_chat_response(chat_id, "Analysis Result")
+    
 @app.post("/analyze/request")
-async def request_analysis(request: Request):
+async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
         user_id = request["userRequest"]["user"]["id"]
@@ -46,6 +49,7 @@ async def request_analysis(request: Request):
         )
         result = repository.save_chat_history(new_chat)
         chat_id = result.data[0]["id"]
+        background_tasks.add_task(analyze_stock, chat_id, chat_history)
 
         return {
             "version": "2.0",
@@ -74,7 +78,6 @@ async def request_analysis(request: Request):
     except Exception as e:
         print(e)
         return e
-
 
 @app.post("/analyze/result")
 async def get_analysis_result(request: Request):
