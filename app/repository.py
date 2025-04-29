@@ -32,13 +32,14 @@ class Repository:
 
     def get_chat(self, chat_id: str) -> ChatHistory:
         result = (
-            self.supabase.table("chat_history")
-            .select("*")
-            .eq("id", chat_id)
-            .execute()
+            self.supabase.table("chat_history").select("*").eq("id", chat_id).execute()
         )
 
         return ChatHistory(**result.data[0])
+
+    def update_chat_response(self, chat_id: str, response: str):
+        data = {"response": response}
+        self.supabase.table("chat_history").update(data).eq("id", chat_id).execute()
 
     def save_chat_history(self, history: ChatHistory):
         data = history.model_dump(exclude={'response', 'created_at'})

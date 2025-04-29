@@ -8,28 +8,3 @@ class ChatHistory(BaseModel):
     utterance: str
     response: str | None = None
     created_at: datetime | None = None
-
-
-class Block(BaseModel):
-    id: str
-    name: str
-
-
-class UserProperties(BaseModel):
-    isFriend: bool
-
-
-class User(BaseModel):
-    id: str
-    type: str
-    properties: UserProperties
-
-
-class UserRequest(BaseModel):
-    block: Block
-    utterance: str
-    user: User
-
-
-class KakaoRequest(BaseModel):
-    userRequest: UserRequest

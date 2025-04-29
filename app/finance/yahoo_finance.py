@@ -118,6 +118,7 @@ class YahooStockFetcher:
                         "high",
                         "low",
                         "close",
+                        "volume",
                         "ma_5",
                         "ma_20",
                         "ma_60",
