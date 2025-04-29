@@ -89,16 +89,16 @@ class LLM:
             print(f"selected_tool.invoke end: {current_time} (took {elapsed:.3f}s)")
             messages.append(tool_message)
 
-            start_time = time.time()
-            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-            print(f"\nllm_with_data.invoke start: {current_time}")
+        start_time = time.time()
+        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        print(f"\nllm_with_data.invoke start: {current_time}")
 
-            result = llm_with_tools.invoke(messages)
-            print(result)
+        result = llm_with_tools.invoke(messages)
+        print(result)
 
-            end_time = time.time()
-            elapsed = end_time - start_time
-            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-            print(f"llm_with_data.invoke end: {current_time} (took {elapsed:.3f}s)")
+        end_time = time.time()
+        elapsed = end_time - start_time
+        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+        print(f"llm_with_data.invoke end: {current_time} (took {elapsed:.3f}s)")
 
-            return result.content
+        return result.content
