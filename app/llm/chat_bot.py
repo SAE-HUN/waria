@@ -50,7 +50,7 @@ class LLM:
         few_shot_messages = few_shot_prompt.format()
         messages = [system_message]
         messages.extend(few_shot_messages)
-        
+
         for chat in chat_history:
             if not chat.utterance or not chat.response:
                 continue
@@ -70,7 +70,11 @@ class LLM:
         elapsed = end_time - start_time
         current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
         print(f"llm_with_tools.invoke end: {current_time} (took {elapsed:.3f}s)")
+        print(ai_message)
 
+        if not ai_message.tool_calls:
+            return ai_message.content
+        
         messages.append(ai_message)
         for tool_call in ai_message.tool_calls:
             selected_tool = {"get_stock_data": tools[0]}[tool_call["name"].lower()]
@@ -85,15 +89,16 @@ class LLM:
             print(f"selected_tool.invoke end: {current_time} (took {elapsed:.3f}s)")
             messages.append(tool_message)
 
-        start_time = time.time()
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"\nllm_with_data.invoke start: {current_time}")
+            start_time = time.time()
+            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+            print(f"\nllm_with_data.invoke start: {current_time}")
 
-        result = llm_with_tools.invoke(messages)
-        print(result)
+            result = llm_with_tools.invoke(messages)
+            print(result)
 
-        end_time = time.time()
-        elapsed = end_time - start_time
-        current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-        print(f"llm_with_data.invoke end: {current_time} (took {elapsed:.3f}s)")
-        return result.content
+            end_time = time.time()
+            elapsed = end_time - start_time
+            current_time = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+            print(f"llm_with_data.invoke end: {current_time} (took {elapsed:.3f}s)")
+
+            return result.content
