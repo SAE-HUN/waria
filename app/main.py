@@ -8,8 +8,9 @@ from concurrent.futures import TimeoutError
 
 from app.finance.fetcher import Fetcher
 from app.llm.chat_bot import LLM
-from app.repository.models import Chat
+from app.repository.models import Chat, ChatAccess
 from app.repository.chat_repository import ChatRepository
+from app.repository.chat_access_repository import ChatAccessRepository
 
 load_dotenv()
 
@@ -25,9 +26,9 @@ FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY")
 
 app = FastAPI()
 chat_repository = ChatRepository(SUPABASE_URL, SUPABASE_KEY, "chats")
+chat_access_repository = ChatAccessRepository(SUPABASE_URL, SUPABASE_KEY, "chat_accesses")
 llm = LLM(OPEN_ROUTER_URL, OPENROUTER_API_KEY, LLM_MODEL)
 fetcher = Fetcher(FINNHUB_API_KEY)
-
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
 WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다려줘!"
@@ -114,17 +115,33 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
 @app.post("/analyze/result")
 async def get_analysis_result(request: Request):
     try:
-        # TODO DB 기록 남기기
         request = await request.json()
         chat_id = request["action"]["clientExtra"]["chat_id"]
+        user_id = request["userRequest"]["user"]["id"]
+
         chat = chat_repository.get_chat(chat_id)
+        result = ""
+        chat_status = ""
+
 
         if chat.response:
-            return {"result": chat.response}
+            result = chat.response
+            chat_status = "SUCCESS"
         elif chat.created_at and (time.time() - chat.created_at.timestamp()) < 60:
-            return {"result": WAITING_MESSAGE}
+            result = WAITING_MESSAGE
+            chat_status = "WAITING"
         else:
-            return {"result": FAILURE_MESSAGE}
+            result = FAILURE_MESSAGE
+            chat_status = "FAILURE"
+
+        chat_access = ChatAccess(
+            user_id=user_id,
+            chat_id=chat_id,
+            chat_status=chat_status,
+        )
+        chat_access_repository.save_chat_access(chat_access)
+
+        return {"result": result}
     except Exception as e:
         print(e)
         return e
