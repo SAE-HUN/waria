@@ -26,15 +26,26 @@ FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY")
 
 app = FastAPI()
 chat_repository = ChatRepository(SUPABASE_URL, SUPABASE_KEY, "chats")
-chat_access_repository = ChatAccessRepository(SUPABASE_URL, SUPABASE_KEY, "chat_accesses")
+chat_access_repository = ChatAccessRepository(
+    SUPABASE_URL, SUPABASE_KEY, "chat_accesses"
+)
 llm = LLM(OPEN_ROUTER_URL, OPENROUTER_API_KEY, LLM_MODEL)
 fetcher = Fetcher(FINNHUB_API_KEY)
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
 WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다려줘!"
+RESPONSE_TEMPLATE = {
+    "version": "2.0",
+    "template": {
+        "outputs": [
+            {
+            }
+        ]
+    },
+}
 
 
-async def analyze_stock(chat_id: str, utterance: str, chat_history):
+async def request_technical_analysis(chat_id: str, utterance: str, chat_history):
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(
@@ -44,7 +55,7 @@ async def analyze_stock(chat_id: str, utterance: str, chat_history):
                 fetcher.get_fundamental_data,
                 chat_history,
             ),
-            timeout=30.0,  # 30초 타임아웃
+            timeout=30.0,
         )
         chat_repository.update_chat_response(chat_id, result)
     except TimeoutError:
@@ -59,8 +70,15 @@ async def analyze_stock(chat_id: str, utterance: str, chat_history):
 async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
+        print(request)
+        
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]
+        new_chat = Chat(
+            user_id=user_id,
+            utterance=utterance,
+        )
+        result = chat_repository.save_chat(new_chat)
 
         chat_history = chat_repository.get_chats(user_id)
         today_chats = [
@@ -70,43 +88,33 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             < 24 * 60 * 60  # TODO 한국 시간으로 하루 맞추기
         ]
         if len(today_chats) >= int(API_LIMIT):
-            return {
-                "message": f"Daily usage limit ({API_LIMIT}) exceeded. Please try again tomorrow.",
-                "status": 429,
+            response = RESPONSE_TEMPLATE
+            response["template"]["outputs"][0]["simpleText"] = {
+                "text": "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
             }
+            return response
 
-        new_chat = Chat(
-            user_id=user_id,
-            utterance=utterance,
-        )
-        result = chat_repository.save_chat(new_chat)
         chat_id = result.data[0]["id"]
-        background_tasks.add_task(analyze_stock, chat_id, utterance, chat_history)
+        background_tasks.add_task(
+            request_technical_analysis, chat_id, utterance, chat_history
+        )
 
-        return {
-            "version": "2.0",
-            "template": {
-                "outputs": [
-                    {
-                        "textCard": {
-                            "title": "분석 중",
-                            "description": "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!",
-                            "buttons": [
-                                {
-                                    "action": "block",
-                                    "label": "결과 받기",
-                                    "blockId": "680b22cabfa6987bff180209",
-                                    "extra": {
-                                        "chat_id": chat_id,
-                                    },
-                                }
-                            ],
-                        }
-                    }
-                ]
+        response = RESPONSE_TEMPLATE
+        response["template"]["outputs"][0]["textCard"] = {}
+        response["template"]["outputs"][0]["textCard"]["title"] = "분석 중"
+        response["template"]["outputs"][0]["textCard"]["description"] = "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!"
+        response["template"]["outputs"][0]["textCard"]["extra"]["chat_id"] = chat_id
+        button = {
+            "action": "block",
+            "label": "결과 받기",
+            "blockId": "680b22cabfa6987bff180209",
+            "extra": {
+                "chat_id": chat_id,
             },
         }
-
+        response["template"]["outputs"][0]["textCard"]["buttons"].append(button)
+        
+        return response
     except Exception as e:
         print(e)
         return e
@@ -122,7 +130,6 @@ async def get_analysis_result(request: Request):
         chat = chat_repository.get_chat(chat_id)
         result = ""
         chat_status = ""
-
 
         if chat.response:
             result = chat.response
