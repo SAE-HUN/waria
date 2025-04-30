@@ -4,7 +4,8 @@ import json
 import requests
 
 from app.llm.templates import (
-    examples,
+    technical_analysis_examples,
+    fundamental_analysis_examples,
     system_message,
 )
 
@@ -54,7 +55,7 @@ class LLM:
                 "type": "function",
                 "function": {
                     "name": "get_fundamental_data",
-                    "description": "Get fundamental data for a given symbol (e.g. '011070.KS'). Returns fundamental metrics for fundamental analysis.",
+                    "description": "Get latest fundamental data for a given symbol (e.g. '011070.KS'). Returns fundamental metrics for fundamental analysis.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -75,8 +76,13 @@ class LLM:
 
         messages = [{"role": "system", "content": system_message}]
 
-        # Add few-shot examples
-        for example in examples:
+        # Add few-shot technical_analysis_examples
+        for example in technical_analysis_examples:
+            messages.append({"role": "user", "content": example["input"]})
+            messages.append({"role": "assistant", "content": example["output"]})
+
+        # Add few-shot fundamental_analysis_examples
+        for example in fundamental_analysis_examples:
             messages.append({"role": "user", "content": example["input"]})
             messages.append({"role": "assistant", "content": example["output"]})
 
@@ -129,7 +135,7 @@ class LLM:
                     field: getattr(tool_result, field)
                     for field in tool_result.__dataclass_fields__
                 }
-
+            print(tool_result)
             messages.append(
                 {
                     "role": "tool",
