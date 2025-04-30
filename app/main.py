@@ -62,7 +62,6 @@ async def analyze(chat_id: str, utterance: str, chat_history):
 async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
-        print(request)
 
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]

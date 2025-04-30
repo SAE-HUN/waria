@@ -31,11 +31,13 @@ fundamental_analysis_template = """
 system_message = f"""
 {character_template}
 
-{technical_analysis_template}
 
 {fundamental_analysis_template}
-"""
 
+{technical_analysis_template}
+
+** 꼭 기술적 분석 또는 펀더멘탈 분석 둘 중 사용자 질문과 제일 연관성 있는 분석 "하나만" 진행해서 답변해줘. **
+"""
 
 
 technical_analysis_examples = [
