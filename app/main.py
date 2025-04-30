@@ -45,7 +45,7 @@ RESPONSE_TEMPLATE = {
 }
 
 
-async def request_technical_analysis(chat_id: str, utterance: str, chat_history):
+async def analyze(chat_id: str, utterance: str, chat_history):
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(
@@ -96,14 +96,13 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
 
         chat_id = result.data[0]["id"]
         background_tasks.add_task(
-            request_technical_analysis, chat_id, utterance, chat_history
+            analyze, chat_id, utterance, chat_history
         )
 
         response = RESPONSE_TEMPLATE
         response["template"]["outputs"][0]["textCard"] = {}
         response["template"]["outputs"][0]["textCard"]["title"] = "분석 중"
         response["template"]["outputs"][0]["textCard"]["description"] = "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!"
-        response["template"]["outputs"][0]["textCard"]["extra"]["chat_id"] = chat_id
         button = {
             "action": "block",
             "label": "결과 받기",
