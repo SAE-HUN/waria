@@ -33,14 +33,20 @@ class Fetcher:
             from_date=datetime.now() - timedelta(days=365),
             to_date=datetime.now(),
         )
+        quote = self.yahoo_fetcher.get_quote(symbol)
 
         fundamental_data = FundamentalData(
+            current_price=quote["current_price"],
+            change_percent=quote["change_percent"],
             pe_trailing=fundamental_metrics_from_yahoo["pe_trailing"],
             pe_forward=fundamental_metrics_from_yahoo["pe_forward"],
             pb_ratio=fundamental_metrics_from_yahoo["pb_ratio"],
             roe=fundamental_metrics_from_yahoo["roe"],
             eps=fundamental_metrics_from_yahoo["eps"],
             dividend_yield=fundamental_metrics_from_yahoo["dividend_yield"],
+            eps_trend_of_next_quarter=fundamental_metrics_from_yahoo[
+                "eps_trend_of_next_quarter"
+            ],
             earnings_surprises=fundamental_metrics_from_finnhub["earnings_surprises"],
             recommendation_trends=fundamental_metrics_from_finnhub[
                 "recommendation_trends"

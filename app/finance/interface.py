@@ -14,11 +14,14 @@ class TechnicalData:
 
 @dataclass
 class FundamentalData:
+    current_price: float
+    change_percent: float
     pe_trailing: float
     pe_forward: float
     pb_ratio: float
     roe: float
     eps: float
+    eps_trend_of_next_quarter: Any
     dividend_yield: float
     earnings_surprises: List
     recommendation_trends: List
