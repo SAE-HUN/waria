@@ -34,15 +34,7 @@ fetcher = Fetcher(FINNHUB_API_KEY)
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
 WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다려줘!"
-RESPONSE_TEMPLATE = {
-    "version": "2.0",
-    "template": {
-        "outputs": [
-            {
-            }
-        ]
-    },
-}
+RATE_LIMIT_MESSAGE = "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
 
 
 async def analyze(chat_id: str, utterance: str, chat_history):
@@ -71,7 +63,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
         print(request)
-        
+
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]
         new_chat = Chat(
@@ -88,32 +80,37 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             < 24 * 60 * 60  # TODO 한국 시간으로 하루 맞추기
         ]
         if len(today_chats) >= int(API_LIMIT):
-            response = RESPONSE_TEMPLATE
-            response["template"]["outputs"][0]["simpleText"] = {
-                "text": "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
+            return {
+                "version": "2.0",
+                "template": {"outputs": [{"simpleText": {"text": RATE_LIMIT_MESSAGE}}]},
             }
-            return response
 
         chat_id = result.data[0]["id"]
-        background_tasks.add_task(
-            analyze, chat_id, utterance, chat_history
-        )
+        background_tasks.add_task(analyze, chat_id, utterance, chat_history)
 
-        response = RESPONSE_TEMPLATE
-        response["template"]["outputs"][0]["textCard"] = {}
-        response["template"]["outputs"][0]["textCard"]["title"] = "분석 중"
-        response["template"]["outputs"][0]["textCard"]["description"] = "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!"
-        button = {
-            "action": "block",
-            "label": "결과 받기",
-            "blockId": "680b22cabfa6987bff180209",
-            "extra": {
-                "chat_id": chat_id,
+        return {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "textCard": {
+                            "title": "분석 중",
+                            "description": "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!",
+                            "buttons": [
+                                {
+                                    "action": "block",
+                                    "label": "결과 받기",
+                                    "blockId": "680b22cabfa6987bff180209",
+                                    "extra": {
+                                        "chat_id": chat_id,
+                                    },
+                                }
+                            ],
+                        }
+                    }
+                ]
             },
         }
-        response["template"]["outputs"][0]["textCard"]["buttons"].append(button)
-        
-        return response
     except Exception as e:
         print(e)
         return e
