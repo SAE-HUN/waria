@@ -1,5 +1,6 @@
 import os
 import time
+from datetime import datetime, timezone, timedelta
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
@@ -54,7 +55,7 @@ async def analyze(chat_id: str, utterance: str, chat_history):
         print(f"TimeoutError: {chat_id}: {utterance}")
         chat_repository.update_chat_response(chat_id, FAILURE_MESSAGE)
     except Exception as e:
-        print(f"Analysis error: {e}")
+        print(e)
         chat_repository.update_chat_response(chat_id, FAILURE_MESSAGE)
 
 
@@ -72,12 +73,17 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
         result = chat_repository.save_chat(new_chat)
 
         chat_history = chat_repository.get_chats(user_id)
+
+        kst = timezone(timedelta(hours=9))
+        now_kst = datetime.now(kst)
+        today_start_kst = datetime(
+            now_kst.year, now_kst.month, now_kst.day, 0, 0, 0, tzinfo=kst
+        )
         today_chats = [
-            chat
-            for chat in chat_history
-            if (time.time() - chat.created_at.timestamp())
-            < 24 * 60 * 60  # TODO 한국 시간으로 하루 맞추기
+            chat for chat in chat_history
+            if chat.created_at.replace(tzinfo=timezone.utc).astimezone(kst) >= today_start_kst
         ]
+        
         if len(today_chats) >= int(API_LIMIT):
             return {
                 "version": "2.0",
@@ -146,4 +152,4 @@ async def get_analysis_result(request: Request):
         return {"result": result}
     except Exception as e:
         print(e)
-        return e
+        return {"result": FAILURE_MESSAGE}

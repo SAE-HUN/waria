@@ -135,5 +135,6 @@ class YahooFinanceFetcher:
             ]
         ].round(2)
         df_selected.index = df_selected.index.strftime('%Y-%m-%d')
+        df_selected = df_selected.astype(object).where(pd.notnull(df_selected), None)
 
         return df_selected.to_dict(orient="index")

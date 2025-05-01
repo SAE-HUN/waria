@@ -2,13 +2,17 @@ from datetime import datetime, timedelta
 from app.finance.interface import TechnicalData, FundamentalData
 from app.finance.fetchers.yahoo_finance import YahooFinanceFetcher
 from app.finance.fetchers.finnhub import FinnhubFetcher
+from cachetools import TTLCache, cached
 
+
+cache = TTLCache(maxsize=100, ttl=60 * 60 * 6)
 
 class Fetcher:
     def __init__(self, FINNHUB_API_KEY) -> None:
         self.yahoo_fetcher = YahooFinanceFetcher()
         self.finnhub_fetcher = FinnhubFetcher(FINNHUB_API_KEY)
 
+    @cached(cache=cache)
     def get_technical_data(self, symbol: str) -> TechnicalData:
         quote = self.yahoo_fetcher.get_quote(symbol)
         ohlcv_and_indicators = self.yahoo_fetcher.get_ohlcv_and_indicators(symbol)
@@ -23,6 +27,7 @@ class Fetcher:
 
         return technical_data
 
+    @cached(cache=cache)
     def get_fundamental_data(self, symbol: str) -> FundamentalData:
         news = self.yahoo_fetcher.get_news(symbol)
         fundamental_metrics_from_yahoo = self.yahoo_fetcher.get_fundamental_metrics(
