@@ -7,6 +7,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
 
+from app.util.log_formatter import JsonFormatter
 from app.finance.fetcher import Fetcher
 from app.llm.chat_bot import ChatBot
 from app.repository.models import Chat, ChatAccess
@@ -38,7 +39,11 @@ WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다
 RATE_LIMIT_MESSAGE = "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
 
 
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger(__name__)
+
 
 async def analyze(chat_id: str, utterance: str, chat_history):
     try:
@@ -66,17 +71,10 @@ async def analyze(chat_id: str, utterance: str, chat_history):
 async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
-
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]
-        new_chat = Chat(
-            user_id=user_id,
-            utterance=utterance,
-        )
-        result = chat_repository.save_chat(new_chat)
 
         chat_history = chat_repository.get_chats(user_id)
-
         kst = timezone(timedelta(hours=9))
         now_kst = datetime.now(kst)
         today_start_kst = datetime(
@@ -93,6 +91,11 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
                 "template": {"outputs": [{"simpleText": {"text": RATE_LIMIT_MESSAGE}}]},
             }
 
+        new_chat = Chat(
+            user_id=user_id,
+            utterance=utterance,
+        )
+        result = chat_repository.save_chat(new_chat)
         chat_id = result.data[0]["id"]
         background_tasks.add_task(analyze, chat_id, utterance, chat_history)
 

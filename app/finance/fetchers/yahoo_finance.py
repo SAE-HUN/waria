@@ -37,16 +37,17 @@ class YahooFinanceFetcher:
             eps_trend = analysis.eps_trend
             if isinstance(eps_trend, pd.DataFrame):
                 eps_trend = eps_trend.to_dict()
-        except AttributeError:
-            eps_trend = None
-
-        eps_trend_of_next_quarter = {
-            'current': eps_trend['current']['+1q'],
-            '7daysAgo': eps_trend['7daysAgo']['+1q'],
-            # '30daysAgo': eps_trend['30daysAgo']['+1q'],
-            # '60daysAgo': eps_trend['60daysAgo']['+1q'],
-            # '90daysAgo': eps_trend['90daysAgo']['+1q'],
-        }
+                
+            eps_trend_of_next_quarter = {
+                'current': eps_trend['current']['+1q'],
+                '7daysAgo': eps_trend['7daysAgo']['+1q'],
+                # '30daysAgo': eps_trend['30daysAgo']['+1q'],
+                # '60daysAgo': eps_trend['60daysAgo']['+1q'],
+                # '90daysAgo': eps_trend['90daysAgo']['+1q'],
+            }
+        except (AttributeError, TypeError, KeyError):
+            eps_trend_of_next_quarter = {}
+            
         return {
             "eps_trend_of_next_quarter": eps_trend_of_next_quarter,
         }
