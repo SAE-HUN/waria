@@ -1,21 +1,32 @@
+import finnhub
+import logging
+
+logger = logging.getLogger(__name__)
+
 class FinnhubFetcher:
     def __init__(self, API_KEY: str) -> None:
-        import finnhub
-
         self.client = finnhub.Client(api_key=API_KEY)
 
     def get_earnings_surprises(self, symbol: str) -> list:
         try:
             return self.client.company_earnings(symbol)
         except Exception as e:
-            print(f"Error fetching earnings surprises for {symbol}: {e}")
+            logger.error({
+                "function": "get_earnings_surprises",
+                "symbol": symbol,
+                "error": e,
+            })
             return []
 
     def get_recommendation_trends(self, symbol: str) -> list:
         try:
             return self.client.recommendation_trends(symbol)
         except Exception as e:
-            print(f"Error fetching recommendation trends for {symbol}: {e}")
+            logger.error({
+                "function": "get_recommendation_trends",
+                "symbol": symbol,
+                "error": e,
+            })
             return []
 
     def get_earnings_calendar(
@@ -26,7 +37,11 @@ class FinnhubFetcher:
                 symbol=symbol, _from=from_date, to=to_date
             )
         except Exception as e:
-            print(f"Error fetching earnings calendar: {e}")
+            logger.error({
+                "function": "get_earnings_calendar",
+                "symbol": symbol,
+                "error": e,
+            })
             return []
 
     def get_fundamental_metrics(

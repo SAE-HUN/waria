@@ -1,14 +1,14 @@
 import os
 import time
 from datetime import datetime, timezone, timedelta
+import asyncio
+import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
-import asyncio
-from concurrent.futures import TimeoutError
 
 from app.finance.fetcher import Fetcher
-from app.llm.chat_bot import LLM
+from app.llm.chat_bot import ChatBot
 from app.repository.models import Chat, ChatAccess
 from app.repository.chat_repository import ChatRepository
 from app.repository.chat_access_repository import ChatAccessRepository
@@ -30,7 +30,7 @@ chat_repository = ChatRepository(SUPABASE_URL, SUPABASE_KEY, "chats")
 chat_access_repository = ChatAccessRepository(
     SUPABASE_URL, SUPABASE_KEY, "chat_accesses"
 )
-llm = LLM(OPEN_ROUTER_URL, OPENROUTER_API_KEY, LLM_MODEL)
+chat_bot = ChatBot(OPEN_ROUTER_URL, OPENROUTER_API_KEY, LLM_MODEL)
 fetcher = Fetcher(FINNHUB_API_KEY)
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
@@ -38,11 +38,13 @@ WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다
 RATE_LIMIT_MESSAGE = "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
 
 
+logger = logging.getLogger(__name__)
+
 async def analyze(chat_id: str, utterance: str, chat_history):
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(
-                llm.get_analysis,
+                chat_bot.get_analysis,
                 utterance,
                 fetcher.get_technical_data,
                 fetcher.get_fundamental_data,
@@ -51,12 +53,13 @@ async def analyze(chat_id: str, utterance: str, chat_history):
             timeout=30.0,
         )
         chat_repository.update_chat_response(chat_id, result)
-    except TimeoutError:
-        print(f"TimeoutError: {chat_id}: {utterance}")
-        chat_repository.update_chat_response(chat_id, FAILURE_MESSAGE)
     except Exception as e:
-        print(e)
         chat_repository.update_chat_response(chat_id, FAILURE_MESSAGE)
+        logger.error({
+            "chat_id": chat_id,
+            "utterance": utterance,
+            "error": e,
+        })
 
 
 @app.post("/analyze/request")
@@ -117,8 +120,16 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             },
         }
     except Exception as e:
-        print(e)
-        return e
+        logger.error({
+            "user_id": user_id,
+            "chat_id": chat_id,
+            "utterance": utterance,
+            "error": e,
+        })
+        return {
+            "version": "2.0",
+            "template": {"outputs": [{"simpleText": {"text": FAILURE_MESSAGE}}]},
+        }
 
 
 @app.post("/analyze/result")
@@ -151,5 +162,9 @@ async def get_analysis_result(request: Request):
 
         return {"result": result}
     except Exception as e:
-        print(e)
+        logger.error({
+            "user_id": user_id,
+            "chat_id": chat_id,
+            "error": e,
+        })
         return {"result": FAILURE_MESSAGE}

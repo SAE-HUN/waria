@@ -2,6 +2,7 @@ from typing import List
 from app.repository.models import Chat
 import json
 import requests
+import logging
 
 from app.llm.templates import (
     technical_analysis_examples,
@@ -9,8 +10,9 @@ from app.llm.templates import (
     system_message,
 )
 
+logger = logging.getLogger(__name__)
 
-class LLM:
+class ChatBot:
     def __init__(
         self,
         OPEN_ROUTER_URL: str,
@@ -111,7 +113,10 @@ class LLM:
 
         response_data = response.json()
         assistant_message = response_data["choices"][0]["message"]
-        print(response_data)
+        logger.info({
+            "utterance": utterance,
+            "assistant_message": assistant_message,
+        })
 
         # If no tool calls, return the content directly
         if "tool_calls" not in assistant_message or not assistant_message["tool_calls"]:
@@ -122,20 +127,23 @@ class LLM:
 
         # Process tool calls
         for tool_call in assistant_message["tool_calls"]:
-            print(tool_call)
             function_name = tool_call["function"]["name"].lower()
-
             if not function_name in tool_functions:
                 continue
-
             args = json.loads(tool_call["function"]["arguments"])
+            logger.info({
+                "utterance": utterance,
+                "tool_call": function_name,
+                "args": args,
+            })
+
             tool_result = tool_functions[function_name](**args)
             if hasattr(tool_result, "__dataclass_fields__"):
                 tool_result = {
                     field: getattr(tool_result, field)
                     for field in tool_result.__dataclass_fields__
                 }
-            print(tool_result)
+
             messages.append(
                 {
                     "role": "tool",
@@ -157,6 +165,9 @@ class LLM:
 
         response_data = response.json()
         final_result = response_data["choices"][0]["message"]["content"]
-        print(response_data)
+        logger.info({
+            "utterance": utterance,
+            "final_result": final_result,
+        })
 
         return final_result
