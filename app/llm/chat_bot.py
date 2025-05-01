@@ -28,7 +28,7 @@ class ChatBot:
         self.model = model
         self.temperature = temperature
 
-    async def get_analysis(
+    def get_analysis(
         self,
         utterance: str,
         technical_data_func,

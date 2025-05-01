@@ -48,7 +48,8 @@ logger = logging.getLogger(__name__)
 async def analyze(chat_id: str, utterance: str, chat_history):
     try:
         result = await asyncio.wait_for(
-            chat_bot.get_analysis(
+            asyncio.to_thread(
+                chat_bot.get_analysis,
                 utterance,
                 fetcher.get_technical_data,
                 fetcher.get_fundamental_data,
@@ -141,7 +142,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
 async def get_analysis_result(request: Request):
     user_id = None
     chat_id = None
-    
+
     try:
         request = await request.json()
         chat_id = request["action"]["clientExtra"]["chat_id"]
