@@ -68,6 +68,9 @@ async def analyze(chat_id: str, utterance: str, chat_history):
 
 @app.post("/analyze/request")
 async def request_analysis(request: Request, background_tasks: BackgroundTasks):
+    user_id = None
+    chat_id = None
+    utterance = None
     try:
         request = await request.json()
         user_id = request["userRequest"]["user"]["id"]
@@ -136,6 +139,9 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
 
 @app.post("/analyze/result")
 async def get_analysis_result(request: Request):
+    user_id = None
+    chat_id = None
+    
     try:
         request = await request.json()
         chat_id = request["action"]["clientExtra"]["chat_id"]
