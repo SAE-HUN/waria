@@ -63,7 +63,7 @@ async def analyze(chat_id: str, utterance: str, chat_history):
         logger.error({
             "chat_id": chat_id,
             "utterance": utterance,
-            "error": e,
+            "error": str(e),
         })
 
 
@@ -127,7 +127,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             "user_id": user_id,
             "chat_id": chat_id,
             "utterance": utterance,
-            "error": e,
+            "error": str(e),
         })
         return {
             "version": "2.0",
@@ -168,6 +168,6 @@ async def get_analysis_result(request: Request):
         logger.error({
             "user_id": user_id,
             "chat_id": chat_id,
-            "error": e,
+            "error": str(e),
         })
         return {"result": FAILURE_MESSAGE}

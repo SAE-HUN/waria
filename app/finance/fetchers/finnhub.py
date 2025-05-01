@@ -14,7 +14,7 @@ class FinnhubFetcher:
             logger.error({
                 "function": "get_earnings_surprises",
                 "symbol": symbol,
-                "error": e,
+                "error": str(e),
             })
             return []
 
@@ -25,7 +25,7 @@ class FinnhubFetcher:
             logger.error({
                 "function": "get_recommendation_trends",
                 "symbol": symbol,
-                "error": e,
+                "error": str(e),
             })
             return []
 
@@ -40,7 +40,7 @@ class FinnhubFetcher:
             logger.error({
                 "function": "get_earnings_calendar",
                 "symbol": symbol,
-                "error": e,
+                "error": str(e),
             })
             return []
 
