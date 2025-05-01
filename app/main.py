@@ -71,10 +71,14 @@ async def analyze(chat_id: str, utterance: str, chat_history):
 async def request_analysis(request: Request, background_tasks: BackgroundTasks):
     try:
         request = await request.json()
+        print(request)
+        logger.info(request)
         user_id = request["userRequest"]["user"]["id"]
         utterance = request["userRequest"]["utterance"]
 
         chat_history = chat_repository.get_chats(user_id)
+        logger.info(chat_history)
+        print(chat_history)
         kst = timezone(timedelta(hours=9))
         now_kst = datetime.now(kst)
         today_start_kst = datetime(
@@ -96,6 +100,8 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             utterance=utterance,
         )
         result = chat_repository.save_chat(new_chat)
+        logger.info(result)
+        print(result)
         chat_id = result.data[0]["id"]
         background_tasks.add_task(analyze, chat_id, utterance, chat_history)
 
