@@ -2,7 +2,7 @@ from typing import List
 from app.repository.models import Chat
 import json
 import requests
-import logging
+from app.util.logger import get_logger
 
 from app.llm.templates import (
     technical_analysis_examples,
@@ -10,7 +10,7 @@ from app.llm.templates import (
     system_message,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class ChatBot:
     def __init__(

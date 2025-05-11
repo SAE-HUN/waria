@@ -1,7 +1,7 @@
 import finnhub
-import logging
+from app.util.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class FinnhubFetcher:
     def __init__(self, API_KEY: str) -> None:

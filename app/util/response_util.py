@@ -1,8 +1,5 @@
 from fastapi.responses import JSONResponse
 from typing import Any, Dict
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def success_response(data: Any = None, message: str = None) -> JSONResponse:

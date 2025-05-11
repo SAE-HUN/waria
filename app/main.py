@@ -1,11 +1,10 @@
 import time
 from datetime import datetime, timezone, timedelta
 import asyncio
-import logging
 
 from fastapi import FastAPI, Request, BackgroundTasks
 
-from app.util.log_formatter import JsonFormatter
+from app.util.logger import setup_logging, get_logger
 from app.repository.models import Chat, ChatAccess
 from app.config import API_LIMIT
 from app.container import chat_repository, chat_access_repository, chat_bot, fetcher
@@ -16,11 +15,8 @@ WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다
 RATE_LIMIT_MESSAGE = "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
 
 app = FastAPI()
-
-handler = logging.StreamHandler()
-handler.setFormatter(JsonFormatter())
-logging.basicConfig(level=logging.INFO, handlers=[handler])
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
 
 
 async def analyze(chat_id: str, utterance: str, chat_history):
