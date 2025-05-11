@@ -9,6 +9,7 @@ from app.util.log_formatter import JsonFormatter
 from app.repository.models import Chat, ChatAccess
 from app.config import API_LIMIT
 from app.container import chat_repository, chat_access_repository, chat_bot, fetcher
+from app.util.response_util import kakao_response, kakao_textcard_response
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
 WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다려줘!"
@@ -66,10 +67,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
         ]
         
         if len(today_chats) >= int(API_LIMIT):
-            return {
-                "version": "2.0",
-                "template": {"outputs": [{"simpleText": {"text": RATE_LIMIT_MESSAGE}}]},
-            }
+            return kakao_response(RATE_LIMIT_MESSAGE)
 
         new_chat = Chat(
             user_id=user_id,
@@ -79,29 +77,11 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
         chat_id = result.data[0]["id"]
         background_tasks.add_task(analyze, chat_id, utterance, chat_history)
 
-        return {
-            "version": "2.0",
-            "template": {
-                "outputs": [
-                    {
-                        "textCard": {
-                            "title": "분석 중",
-                            "description": "약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!",
-                            "buttons": [
-                                {
-                                    "action": "block",
-                                    "label": "결과 받기",
-                                    "blockId": "680b22cabfa6987bff180209",
-                                    "extra": {
-                                        "chat_id": chat_id,
-                                    },
-                                }
-                            ],
-                        }
-                    }
-                ]
-            },
-        }
+        return kakao_textcard_response(
+            title="분석 중",
+            description="약 10초 뒤 결과를 받을 수 있어. 버튼을 눌러 확인해줘!",
+            chat_id=chat_id,
+        )
     except Exception as e:
         logger.error({
             "user_id": user_id,
@@ -109,10 +89,7 @@ async def request_analysis(request: Request, background_tasks: BackgroundTasks):
             "utterance": utterance,
             "error": str(e),
         })
-        return {
-            "version": "2.0",
-            "template": {"outputs": [{"simpleText": {"text": FAILURE_MESSAGE}}]},
-        }
+        return kakao_response(FAILURE_MESSAGE)
 
 
 @app.post("/analyze/result")
