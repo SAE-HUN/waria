@@ -1,43 +1,20 @@
-import os
 import time
 from datetime import datetime, timezone, timedelta
 import asyncio
 import logging
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
 
 from app.util.log_formatter import JsonFormatter
-from app.finance.fetcher import Fetcher
-from app.llm.chat_bot import ChatBot
 from app.repository.models import Chat, ChatAccess
-from app.repository.chat_repository import ChatRepository
-from app.repository.chat_access_repository import ChatAccessRepository
-
-load_dotenv()
-
-API_LIMIT = os.environ.get("API_LIMIT")
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-OPEN_ROUTER_URL = os.environ.get("OPEN_ROUTER_URL")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-LLM_MODEL = os.environ.get("LLM_MODEL")
-
-FINNHUB_API_KEY = os.environ.get("FINNHUB_API_KEY")
-
-app = FastAPI()
-chat_repository = ChatRepository(SUPABASE_URL, SUPABASE_KEY, "chats")
-chat_access_repository = ChatAccessRepository(
-    SUPABASE_URL, SUPABASE_KEY, "chat_accesses"
-)
-chat_bot = ChatBot(OPEN_ROUTER_URL, OPENROUTER_API_KEY, LLM_MODEL)
-fetcher = Fetcher(FINNHUB_API_KEY)
+from app.config import API_LIMIT
+from app.container import chat_repository, chat_access_repository, chat_bot, fetcher
 
 FAILURE_MESSAGE = "미안, 이번엔 분석이 실패했어. 다시 한 번 시도해줄래?"
 WAITING_MESSAGE = "아직 분석이 완료되지 않았어. 잠시만 더 기다려줘!"
 RATE_LIMIT_MESSAGE = "오늘 사용 횟수가 모두 소진되었어. 내일 다시 시도해줘!"
 
+app = FastAPI()
 
 handler = logging.StreamHandler()
 handler.setFormatter(JsonFormatter())
@@ -177,3 +154,8 @@ async def get_analysis_result(request: Request):
             "error": str(e),
         })
         return {"result": FAILURE_MESSAGE}
+
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
