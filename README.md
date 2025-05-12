@@ -154,3 +154,8 @@ waria/
 - **app/repository/chat_access_repository.py** – Supabase `chat_accesses` 테이블과 연동되는 클래스입니다. 주로 `save_chat_access(ChatAccess)` 메서드를 통해 사용자가 결과를 조회할 때마다 접근 기록을 남깁니다. (예: WAITING 단계에서 조회했는지, SUCCESS 시 응답을 받았는지 등의 상태를 저장하여 사용 패턴을 분석할 수 있습니다.)
 - **app/util/logger.py** – Python 로깅 설정을 도와주는 유틸입니다. JSON 포맷으로 로그를 출력하도록 `JsonFormatter`를 정의하고, `setup_logging()`으로 전역 로거를 설정합니다. 이를 통해 콘솔 로그를 수집할 때 구조화된 JSON 형태로 로그가 남아 디버깅 및 모니터링에 유용합니다.
 - **app/util/response_util.py** – FastAPI 엔드포인트에서 반환할 응답을 생성하는 도움 함수들이 있습니다. `kakao_response(text)`는 카카오톡 간단 텍스트 응답 형식에 맞춰 JSON을 생성하고, `kakao_textcard_response(title, description, chat_id)`는 텍스트 카드 형식의 응답(JSON)을 생성합니다. 이 텍스트 카드에는 "결과 받기" 버튼이 포함되어 있으며, 사용자가 누르면 `chat_id`가 포함된 추가 요청을 보내도록 설계되어 있습니다. 이러한 응답 형식은 모두 카카오 i 오픈빌더의 요구사항을 따릅니다.
+
+## 부록
+
+- [카카오톡 채널(리아)](https://pf.kakao.com/_rPxown)
+- [카카오 챗봇 가이드](https://kakaobusiness.gitbook.io/main/tool/chatbot)
