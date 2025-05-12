@@ -29,7 +29,7 @@ async def analyze(chat_id: str, utterance: str, chat_history):
                 fetcher.get_fundamental_data,
                 chat_history,
             ),
-            timeout=30.0,
+            timeout=30,
         )
         chat_repository.update_chat_response(chat_id, result)
     except Exception as e:
